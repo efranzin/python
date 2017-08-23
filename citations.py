@@ -38,7 +38,7 @@ order = options.order
 import urllib.request, urllib.error, urllib.parse
 from bs4 import BeautifulSoup as bs
 
-# apri il profilo su INSPIRE-HEP
+# Open the INSPIRE-HEP profile
 inspirehepprofile = 'http://inspirehep.net/search?p=author:' + BAI
 if collection == 'published':
     profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Published&rg=250'), 'html.parser')
@@ -61,22 +61,21 @@ elif collection == 'review':
 elif collection == 'proceedings':
     profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Proceedings&rg=250'), 'html.parser')
 
-# trova i recordids
+# Find and store the recordids
 recordids = []
 ids = profile.find_all('a', class_='moreinfo')
-# e salvali in una lista
 for id in range(len(ids)):
     if ids[id].string == 'Detailed record':
         record = ids[id].get('href').replace('/record/','').replace('?ln=en','')
         recordids.append(record)
 
-# default: from most recent
+# Default: from most recent
 if order == True:
     recordids.reverse()
 
 totcits = totcitssc = 0
 
-# per ogni record cerca il titolo, il numero di citazioni totali e togli i self-cites
+# For each record print the title, the number of citations and the number of citations excluding self cites
 for record in range(len(recordids)):
     article = bs(urllib.request.urlopen('http://inspirehep.net/record/' + recordids[record]), 'html.parser')
     citations = bs(urllib.request.urlopen('http://inspirehep.net/search?ln=en&p=recid:' + recordids[record] + '&of=hcs2'), 'html.parser')
@@ -93,5 +92,6 @@ for record in range(len(recordids)):
         totcits = totcits + int(float(cells[1].string))
         totcitssc = totcitssc + int(float(cells[2].string))
 
+# Print the total number of citations and the total number of citations excluding self cites
 if len(recordids) > 0:
     print('Total number of citations: ', totcits, '; Excluding self cites: ', totcitssc, sep='')
