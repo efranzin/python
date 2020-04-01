@@ -7,7 +7,7 @@ Inspirehep database (https://inspirehep.net/) for each paper in a given collecti
 """
 
 __author__ = 'Edgardo Franzin'
-__version__ = '1.0.1'
+__version__ = '1.0.3'
 __license__ = 'GPL'
 __email__ = 'edgardo<dot>franzin<at>gmail<dot>com'
 
@@ -39,7 +39,7 @@ import urllib.request, urllib.error, urllib.parse
 from bs4 import BeautifulSoup as bs
 
 # Open the INSPIRE-HEP profile
-inspirehepprofile = 'https://inspirehep.net/search?p=author:' + BAI
+inspirehepprofile = 'https://old.inspirehep.net/search?p=author:' + BAI
 if collection == 'published':
     profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Published&rg=250'), 'html.parser')
 elif collection == 'all':
@@ -77,8 +77,8 @@ totcits = totcitssc = 0
 
 # For each record print the title, the number of citations and the number of citations excluding self cites
 for record in range(len(recordids)):
-    article = bs(urllib.request.urlopen('https://inspirehep.net/record/' + recordids[record]), 'html.parser')
-    citations = bs(urllib.request.urlopen('https://inspirehep.net/search?ln=en&p=recid:' + recordids[record] + '&of=hcs2'), 'html.parser')
+    article = bs(urllib.request.urlopen('https://old.inspirehep.net/record/' + recordids[record]), 'html.parser')
+    citations = bs(urllib.request.urlopen('https://old.inspirehep.net/search?ln=en&p=recid:' + recordids[record] + '&of=hcs2'), 'html.parser')
     citesummary = citations.find('table', id='citesummary')
     rows = citesummary.findAll('tr')
     cells = rows[2].findAll('td')
