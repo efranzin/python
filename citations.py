@@ -7,12 +7,12 @@ Inspirehep database (https://inspirehep.net/) for each paper in a given collecti
 """
 
 __author__ = 'Edgardo Franzin'
-__version__ = '1.0.3'
+__version__ = '2.0'
 __license__ = 'GPL'
 __email__ = 'edgardo<dot>franzin<at>gmail<dot>com'
 
 
-import string, re, sys
+import sys
 from optparse import OptionParser
 
 # Parse options
@@ -23,7 +23,7 @@ parser = OptionParser(usage)
 parser.add_option('-b', '--BAI', dest='BAI',
                   help='BAI identifier; default: E.Franzin.1', default='E.Franzin.1')
 parser.add_option('-c', '--collection', dest='collection',
-                  help='collections: all, book, citeable, conferencepaper, introductory, lectures, proceedings, published, review, thesis; default: published', default='published')
+                  help='collections: all, book, bookchapter, conferencepaper, introductory, lectures, proceedings, published, review, thesis; default: published', default='published')
 parser.add_option('-r', '--reversed', action='store_true', dest='order',
                   help='list the items in chronological order')
 
@@ -33,65 +33,57 @@ BAI = options.BAI
 collection = options.collection
 order = options.order
 
-# Import the library used to query a website
-# and the Beautiful soup functions to parse the data returned from the website
-import urllib.request, urllib.error, urllib.parse
-from bs4 import BeautifulSoup as bs
+# Import the modules to open and reading URLs and the JSON encoder
+import urllib.request, json
 
 # Open the INSPIRE-HEP profile
-inspirehepprofile = 'https://old.inspirehep.net/search?p=author:' + BAI
+inspirehep_profile = 'https://inspirehep.net/api/literature?sort=mostrecent&size=1000&q=a%20' + BAI
 if collection == 'published':
-    profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Published&rg=250'), 'html.parser')
+    inspirehep_profile = inspirehep_profile + '&doc_type=published'
 elif collection == 'all':
-    profile = bs(urllib.request.urlopen(inspirehepprofile), 'html.parser')
-elif collection == 'citeable':
-    profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Citeable&rg=250'), 'html.parser')
+    inspirehep_profile = inspirehep_profile
 elif collection == 'book':
-    profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Book&rg=250'), 'html.parser')
+    inspirehep_profile = inspirehep_profile + '&doc_type=book'
+elif collection == 'bookchapter':
+    inspirehep_profile = inspirehep_profile + '&doc_type=book%20chapter'
 elif collection == 'conferencepaper':
-    profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:ConferencePaper&rg=250'), 'html.parser')
+    inspirehep_profile = inspirehep_profile + '&doc_type=conference%20paper'
 elif collection == 'introductory':
-    profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Introductory&rg=250'), 'html.parser')
+    inspirehep_profile = inspirehep_profile + '&doc_type=introductory'
 elif collection == 'lectures':
-    profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Lectures&rg=250'), 'html.parser')
+    inspirehep_profile = inspirehep_profile + '&doc_type=lectures'
 elif collection == 'thesis':
-    profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Thesis&rg=250'), 'html.parser')
+    inspirehep_profile = inspirehep_profile + '&doc_type=thesis'
 elif collection == 'review':
-    profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Review&rg=250'), 'html.parser')
+    inspirehep_profile = inspirehep_profile + '&doc_type=review'
 elif collection == 'proceedings':
-    profile = bs(urllib.request.urlopen(inspirehepprofile + '+collection:Proceedings&rg=250'), 'html.parser')
+    inspirehep_profile = inspirehep_profile + '&doc_type=proceedings'
 
-# Find and store the recordids
-recordids = []
-ids = profile.find_all('a', class_='moreinfo')
-for id in range(len(ids)):
-    if ids[id].string == 'Detailed record':
-        record = ids[id].get('href').replace('/record/','').replace('?ln=en','')
-        recordids.append(record)
+# Load the data
+data = json.loads(urllib.request.urlopen(inspirehep_profile).read())
 
-# Default: from most recent
+# Sorting: default is from most recent
+total_hits = range(data['hits']['total'])
 if order == True:
-    recordids.reverse()
+    total_hits = reversed(range(data['hits']['total']))
 
-totcits = totcitssc = 0
+totcits = totcits_noself = totcits_published = totcits_noself_published = 0
 
 # For each record print the title, the number of citations and the number of citations excluding self cites
-for record in range(len(recordids)):
-    article = bs(urllib.request.urlopen('https://old.inspirehep.net/record/' + recordids[record]), 'html.parser')
-    citations = bs(urllib.request.urlopen('https://old.inspirehep.net/search?ln=en&p=recid:' + recordids[record] + '&of=hcs2'), 'html.parser')
-    citesummary = citations.find('table', id='citesummary')
-    rows = citesummary.findAll('tr')
-    cells = rows[2].findAll('td')
-    print('\033[1m' + article.title.string.replace(' - INSPIRE-HEP','') + '\033[0m')
-    if collection == 'published':
-        print('Number of citations: ' + cells[4].string + '; Excluding self cites: ' + cells[5].string)
-        totcits = totcits + int(float(cells[4].string))
-        totcitssc = totcitssc + int(float(cells[5].string))
-    else:
-        print('Number of citations: ' + cells[1].string + '; Excluding self cites: ' + cells[2].string)
-        totcits = totcits + int(float(cells[1].string))
-        totcitssc = totcitssc + int(float(cells[2].string))
+for i in total_hits:
+    title = data['hits']['hits'][i]['metadata']['titles'][0]['title']
+    cits = data['hits']['hits'][i]['metadata']['citation_count']
+    cits_noself = data['hits']['hits'][i]['metadata']['citation_count_without_self_citations']
+    if 'refereed' in data['hits']['hits'][i]['metadata']:
+        totcits_published = totcits_published + cits
+        totcits_noself_published = totcits_noself_published + cits_noself
+    print('\033[1m' + title + '\033[0m')
+    print('Number of citations: ', cits, '; Excluding self cites: ', cits_noself, sep='')
+    totcits = totcits + cits
+    totcits_noself = totcits_noself + cits_noself
 
 # Print the total number of citations and the total number of citations excluding self cites
-if len(recordids) > 0:
-    print('Total number of citations: ', totcits, '; Excluding self cites: ', totcitssc, sep='')
+if len(total_hits) > 0:
+    print('\nTotal number of citations: ', totcits, '; Excluding self cites: ', totcits_noself, sep='')
+if collection == 'all':
+    print('Total number of citations: ', totcits_published, '; Excluding self cites: ', totcits_noself_published, ' (Published only)', sep='')
