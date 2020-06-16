@@ -7,7 +7,7 @@ Inspirehep database (https://inspirehep.net/) for each paper in a given collecti
 """
 
 __author__ = 'Edgardo Franzin'
-__version__ = '2.0'
+__version__ = '2.1'
 __license__ = 'GPL'
 __email__ = 'edgardo<dot>franzin<at>gmail<dot>com'
 
@@ -16,12 +16,14 @@ import sys
 from optparse import OptionParser
 
 # Parse options
-usage = sys.argv[0] + ' [-b|--BAI=<BAI>] [-c|--collection=<COLLECTION>] [-r|--reversed] [-h|--help]'
+usage = sys.argv[0] + ' [-b|--BAI=<BAI>] [-y|--year=<YEAR>] [-c|--collection=<COLLECTION>] [-r|--reversed] [-h|--help]'
 
 parser = OptionParser(usage)
 
 parser.add_option('-b', '--BAI', dest='BAI',
                   help='BAI identifier; default: E.Franzin.1', default='E.Franzin.1')
+parser.add_option('-y', '--year', dest='year',
+                  help='results for a given year')
 parser.add_option('-c', '--collection', dest='collection',
                   help='collections: all, book, bookchapter, conferencepaper, introductory, lectures, proceedings, published, review, thesis; default: published', default='published')
 parser.add_option('-r', '--reversed', action='store_true', dest='order',
@@ -30,6 +32,7 @@ parser.add_option('-r', '--reversed', action='store_true', dest='order',
 (options, args) = parser.parse_args()
 
 BAI = options.BAI
+year = options.year
 collection = options.collection
 order = options.order
 
@@ -38,6 +41,12 @@ import urllib.request, json
 
 # Open the INSPIRE-HEP profile
 inspirehep_profile = 'https://inspirehep.net/api/literature?sort=mostrecent&size=1000&q=a%20' + BAI
+
+# Select the year
+if year is not None:
+    inspirehep_profile = inspirehep_profile + '%20date%20' + year
+
+# Select the collection
 if collection == 'published':
     inspirehep_profile = inspirehep_profile + '&doc_type=published'
 elif collection == 'all':
