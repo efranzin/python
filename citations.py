@@ -7,7 +7,7 @@ Inspirehep database (https://inspirehep.net/) for each paper in a given collecti
 """
 
 __author__ = 'Edgardo Franzin'
-__version__ = '2.1'
+__version__ = '2.2'
 __license__ = 'GPL'
 __email__ = 'edgardo<dot>franzin<at>gmail<dot>com'
 
@@ -70,16 +70,17 @@ elif collection == 'proceedings':
 
 # Load the data
 data = json.loads(urllib.request.urlopen(inspirehep_profile).read())
+total_hits = data['hits']['total']
 
 # Sorting: default is from most recent
-total_hits = range(data['hits']['total'])
+hits = range(total_hits)
 if order == True:
-    total_hits = reversed(range(data['hits']['total']))
-
-totcits = totcits_noself = totcits_published = totcits_noself_published = 0
+    hits = reversed(range(total_hits))
 
 # For each record print the title, the number of citations and the number of citations excluding self cites
-for i in total_hits:
+totcits = totcits_noself = totcits_published = totcits_noself_published = 0
+
+for i in hits:
     title = data['hits']['hits'][i]['metadata']['titles'][0]['title']
     cits = data['hits']['hits'][i]['metadata']['citation_count']
     cits_noself = data['hits']['hits'][i]['metadata']['citation_count_without_self_citations']
@@ -92,7 +93,7 @@ for i in total_hits:
     totcits_noself = totcits_noself + cits_noself
 
 # Print the total number of citations and the total number of citations excluding self cites
-if len(total_hits) > 0:
+if total_hits > 0:
     print('\nTotal number of citations: ', totcits, '; Excluding self cites: ', totcits_noself, sep='')
 if collection == 'all':
     print('Total number of citations: ', totcits_published, '; Excluding self cites: ', totcits_noself_published, ' (Published only)', sep='')
