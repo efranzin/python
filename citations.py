@@ -7,7 +7,7 @@ Inspirehep database (https://inspirehep.net/) for each paper in a given collecti
 """
 
 __author__ = 'Edgardo Franzin'
-__version__ = '2.2'
+__version__ = '2.3'
 __license__ = 'GPL'
 __email__ = 'edgardo<dot>franzin<at>gmail<dot>com'
 
@@ -37,7 +37,7 @@ collection = options.collection
 order = options.order
 
 # Import the modules to open and reading URLs and the JSON encoder
-import urllib.request, json
+import requests
 
 # Open the INSPIRE-HEP profile
 inspirehep_profile = 'https://inspirehep.net/api/literature?sort=mostrecent&size=1000&q=a%20' + BAI
@@ -69,7 +69,7 @@ elif collection == 'proceedings':
     inspirehep_profile = inspirehep_profile + '&doc_type=proceedings'
 
 # Load the data
-data = json.loads(urllib.request.urlopen(inspirehep_profile).read())
+data = requests.get(inspirehep_profile).json()
 total_hits = data['hits']['total']
 
 # Sorting: default is from most recent
